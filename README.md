@@ -1,5 +1,5 @@
 # go-api
-Simple Go API for User Management. Launches on http://localhost:10000. To launch, run command `go run main.go`.
+Simple Go API for User Management. Launches on http://localhost:10000. To launch, run command `go run main.go` from project root.
 ## Routes
 Simple routes
 - View All Users - http://localhost:10000/users (GET)
