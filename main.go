@@ -18,6 +18,11 @@ func initRoutes() {
 	// new mux router
 	router := mux.NewRouter().StrictSlash(true)
 
+	// redirect root / to users
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "./users", http.StatusMovedPermanently)
+	})
+
 	// get random user
 	router.HandleFunc("/random-user", u.GetRandomUser).Methods("GET")
 
