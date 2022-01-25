@@ -1,1 +1,1 @@
-web: ./goapi
+web: bin/goapi
