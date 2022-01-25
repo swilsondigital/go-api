@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GO-API Docs</title>
+</head>
+<body>
+    
+    <h1>{{ .Title}}</h1>
+    <p>Simple Go API for User Management.</p>
+    
+    <h2>Routes</h2>
+    <hr>
+<p>Simple routes</p>
+<ul>
+    <li>View All Users - <a href="//{{ .SiteURL}}/users">{{ .SiteURL }}/users</a> (GET)</li>
+    <li>Create New User - {{ .SiteURL }}/users (POST)</li>
+    <li>View Single User - <a href="//{{ .SiteURL}}/users/1">{{ .SiteURL }}/users/{id}</a> (GET)</li>
+    <li>View Random User - <a href="//{{ .SiteURL}}/random-user">{{ .SiteURL }}/random-user</a> (GET)</li>
+    <li>Introduce User - <a href="//{{ .SiteURL}}/users/1/hello">{{ .SiteURL }}/users/{id}/hello</a> (GET)</li>
+    <li>Edit Single User - {{ .SiteURL }}/users/{id} (PUT)</li>
+    <li>Delete Single User - {{ .SiteURL }}/users/{id} (DELETE)</li>
+    <li>Delete All Users - {{ .SiteURL }}/users/ (DELETE)</li>
+</ul>
+
+</body>
+</html>

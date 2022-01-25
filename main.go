@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	h "goapi/src/goapi/pages"
 	u "goapi/src/goapi/users"
 	"log"
 	"net/http"
@@ -19,9 +20,11 @@ func initRoutes() {
 	router := mux.NewRouter().StrictSlash(true)
 
 	// redirect root / to users
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "./users", http.StatusMovedPermanently)
-	})
+	// router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// 	http.Redirect(w, r, "./users", http.StatusMovedPermanently)
+	// })
+
+	router.HandleFunc("/", h.ShowHomePage).Methods("GET")
 
 	// get random user
 	router.HandleFunc("/random-user", u.GetRandomUser).Methods("GET")
