@@ -1,6 +1,7 @@
 package home
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
 	"os"
@@ -17,10 +18,13 @@ type Home struct {
  */
 func ShowHomePage(w http.ResponseWriter, r *http.Request) {
 	// get hostname
-	hostname, err := os.Hostname()
-	if err != nil {
-		panic(err)
-	}
+	// hostname, err := os.Hostname()
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	url := r.RequestURI
+	fmt.Println(r.URL)
 
 	// get working directory
 	cwd, err := os.Getwd()
@@ -29,7 +33,7 @@ func ShowHomePage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// set home object
-	home := Home{"Welcome", hostname}
+	home := Home{"Welcome", url}
 
 	// setup template
 	fp := path.Join(cwd, "src/goapi", "templates", "index.html")
