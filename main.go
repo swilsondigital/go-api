@@ -5,6 +5,7 @@ import (
 	u "goapi/src/goapi/users"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -37,8 +38,12 @@ func initRoutes() {
 	// delete all users
 	userRouter.HandleFunc("/", u.DeleteAllUsers).Methods("POST", "DELETE")
 
+	port, ok := os.LookupEnv("PORT")
+	if !ok {
+		port = "3000"
+	}
 	// log and listen/serve
-	log.Fatal(http.ListenAndServe(":10000", router))
+	log.Fatal(http.ListenAndServe(":"+port, router))
 }
 
 /**
