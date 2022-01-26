@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	h "goapi/src/goapi/pages"
-	u "goapi/src/goapi/users"
+	db "goapi/src"
+	h "goapi/src/pages"
+	u "goapi/src/users"
 	"log"
 	"net/http"
 	"os"
@@ -68,6 +69,11 @@ func convertStringToTime(s string) time.Time {
 func main() {
 	// init message
 	fmt.Println("Rest User API")
+	// create db connection
+	// db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	// if err != nil {
+	// 	panic(err)
+	// }
 	// initialize users for instant data
 	u.Users = []u.User{
 		{
@@ -111,5 +117,6 @@ func main() {
 			MemberSince:     convertStringToTime("2018-07-19T00:00:00Z"),
 		},
 	}
+	db.InitDB()
 	initRoutes()
 }
