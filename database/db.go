@@ -1,6 +1,8 @@
-package models
+package database
 
 import (
+	"goapi/models"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -17,7 +19,14 @@ func InitDB(postgresURL string) {
 		panic(err)
 	}
 
-	db.AutoMigrate(&User{})
+	db.AutoMigrate([]models.User{})
 
 	DB = db
+}
+
+/**
+* Get Connection to DB
+ */
+func GetDB() *gorm.DB {
+	return DB
 }

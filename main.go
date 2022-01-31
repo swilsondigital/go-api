@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	userController "goapi/controllers"
-	"goapi/models"
+	controllers "goapi/controllers"
+	"goapi/database"
 	h "goapi/pages"
 	"log"
 	"net/http"
@@ -28,24 +28,24 @@ func initRoutes() {
 	router.HandleFunc("/", h.ShowHomePage).Methods("GET")
 
 	// get random user
-	router.HandleFunc("/random-user", userController.GetRandomUser).Methods("GET")
+	router.HandleFunc("/random-user", controllers.GetRandomUser).Methods("GET")
 
 	// user subrouter paths
 	userRouter := router.PathPrefix("/users").Subrouter()
 	// create new user
-	userRouter.HandleFunc("/", userController.CreateNewUser).Methods("POST")
+	userRouter.HandleFunc("/", controllers.CreateNewUser).Methods("POST")
 	// get all users
-	userRouter.HandleFunc("/", userController.GetAllUsers).Methods("GET")
+	userRouter.HandleFunc("/", controllers.GetAllUsers).Methods("GET")
 	// get single user
-	userRouter.HandleFunc("/{id}", userController.GetUser).Methods("GET")
+	userRouter.HandleFunc("/{id}", controllers.GetUser).Methods("GET")
 	// update single user
-	userRouter.HandleFunc("/{id}", userController.UpdateUser).Methods("PUT")
+	userRouter.HandleFunc("/{id}", controllers.UpdateUser).Methods("PUT")
 	// delete single user
-	userRouter.HandleFunc("/{id}", userController.DeleteUser).Methods("DELETE")
+	userRouter.HandleFunc("/{id}", controllers.DeleteUser).Methods("DELETE")
 	// get single user
-	userRouter.HandleFunc("/{id}/hello", userController.IntroduceUser).Methods("GET")
+	userRouter.HandleFunc("/{id}/hello", controllers.IntroduceUser).Methods("GET")
 	// delete all users
-	userRouter.HandleFunc("/", userController.DeleteAllUsers).Methods("POST", "DELETE")
+	userRouter.HandleFunc("/", controllers.DeleteAllUsers).Methods("POST", "DELETE")
 
 	port, ok := os.LookupEnv("PORT")
 	if !ok {
@@ -73,6 +73,6 @@ func main() {
 		fmt.Println("No local env detected")
 	}
 	postgresURL := os.Getenv("DATABASE_URL")
-	models.InitDB(postgresURL)
+	database.InitDB(postgresURL)
 	initRoutes()
 }

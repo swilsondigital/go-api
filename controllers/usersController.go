@@ -1,8 +1,9 @@
-package userController
+package controllers
 
 import (
 	"encoding/json"
 	"fmt"
+	"goapi/database"
 	"goapi/models"
 	"math/rand"
 	"net/http"
@@ -32,13 +33,17 @@ type UpdateUserInput struct {
 	MemberSince     time.Time `json:"since"`
 }
 
+type Repository struct {
+	db *gorm.DB
+}
+
 /**
 * Get All Users - Index
  */
-func GetAllUsers(w http.ResponseWriter, r *http.Request) {
+func (p *Repository) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	// setup user query
 	var users []models.User
-	models.DB.Find(&users)
+	database.DB.Find(&users)
 	// return message
 	fmt.Println("Returning all users")
 	fmt.Println(len(users))
@@ -72,7 +77,7 @@ func CreateNewUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// start transaction for creation
-	models.DB.Transaction(func(tx *gorm.DB) error {
+	database.DB.Transaction(func(tx *gorm.DB) error {
 		// try create
 		if err := tx.Create(&user).Error; err != nil {
 			return err
@@ -93,13 +98,16 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 
 	// get model and check db for user
 	var user models.User
-	if err := models.DB.Where("id = ?", id).First(&user).Error; err != nil {
+	var resp interface{}
+	err := database.DB.Where("id = ?", id).First(&user).Error
+	if err != nil {
 		// return message about no user found
-		json.NewEncoder(w).Encode("User with id: " + id + " could not be found")
-		return
+		resp = "User with id: " + id + " could not be found"
+	} else {
+		resp = &user
 	}
 	// return user
-	json.NewEncoder(w).Encode(&user)
+	json.NewEncoder(w).Encode(resp)
 }
 
 /**
@@ -112,13 +120,26 @@ func IntroduceUser(w http.ResponseWriter, r *http.Request) {
 
 	// get model and check db for user
 	var user models.User
-	if err := models.DB.Where("id = ?", id).First(&user).Error; err != nil {
+	if err := database.DB.Where("id = ?", id).First(&user).Error; err != nil {
 		// return message about no user found
 		json.NewEncoder(w).Encode("User with id: " + id + " could not be found")
 		return
 	}
+
+	greeting := "Hello! My name is " + user.GetFullName() + "."
+	var name string
+	// add preferred name to greeting
+	if user.PreferredName != "" {
+		name = user.PreferredName
+	} else {
+		name = user.FirstName
+	}
+	greeting += " You can call me " + name + "."
+	// check for random skill
+	if randSkill, ok := user.GetRandomSkill(); ok {
+		greeting += " I have experience with " + randSkill + "."
+	}
 	// return user
-	greeting := "Hello! My name is " + user.GetFullName() + ". You can call me " + user.PreferredName + ". I have programming experience with " + user.GetRandomSkill() + "."
 	json.NewEncoder(w).Encode(&greeting)
 }
 
@@ -127,7 +148,7 @@ func IntroduceUser(w http.ResponseWriter, r *http.Request) {
  */
 func GetRandomUser(w http.ResponseWriter, r *http.Request) {
 	var users []models.User
-	models.DB.Find(&users)
+	database.DB.Find(&users)
 	// check if users found
 	if len(users) == 0 {
 		// return message
@@ -158,7 +179,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	// get model and check db for user
 	var user models.User
-	if err := models.DB.Where("id = ?", id).First(&user).Error; err != nil {
+	if err := database.DB.Where("id = ?", id).First(&user).Error; err != nil {
 		// return message about no user found
 		json.NewEncoder(w).Encode("User with id: " + id + " could not be found")
 		return
@@ -179,7 +200,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// start transaction for update
-	models.DB.Transaction(func(tx *gorm.DB) error {
+	database.DB.Transaction(func(tx *gorm.DB) error {
 		// try create
 		if err := tx.Model(&user).Updates(userInput).Error; err != nil {
 			return err
@@ -202,14 +223,14 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	// get model and check db for user
 	var user models.User
-	if err := models.DB.Where("id = ?", id).First(&user).Error; err != nil {
+	if err := database.DB.Where("id = ?", id).First(&user).Error; err != nil {
 		// return message about no user found
 		json.NewEncoder(w).Encode("User with id: " + id + " could not be found")
 		return
 	}
 
 	// start transaction for deletion
-	models.DB.Transaction(func(tx *gorm.DB) error {
+	database.DB.Transaction(func(tx *gorm.DB) error {
 		// try create
 		if err := tx.Delete(&user).Error; err != nil {
 			json.NewEncoder(w).Encode("User with id: " + id + " could not be found")
@@ -230,11 +251,11 @@ func DeleteAllUsers(w http.ResponseWriter, r *http.Request) {
 
 	// get users models
 	var users []models.User
-	models.DB.Find(&users)
+	database.DB.Find(&users)
 
 	// loop through users models and delete
 	for _, user := range users {
-		models.DB.Delete(&user)
+		database.DB.Delete(&user)
 	}
 
 	json.NewEncoder(w).Encode("All Users Deleted")
