@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"errors"
 	"math/rand"
 	"time"
 
@@ -51,8 +50,8 @@ func (u *User) GetFullName() string {
 func GetAllUsers(db *gorm.DB) ([]User, error) {
 	// setup user query
 	var users []User
-	if err := db.Find(&users); err != nil {
-		return nil, errors.New("Could not retrieve users")
+	if err := db.Find(&users).Error; err != nil {
+		return nil, err
 	}
 	return users, nil
 }
@@ -76,16 +75,11 @@ func (u *User) CreateNewUser(db *gorm.DB) error {
 /**
 * Get Single User - Read
  */
-func (u *User) GetUser(db *gorm.DB) (interface{}, error) {
+func (u *User) GetUser(db *gorm.DB) (User, error) {
 	// get model and check db for user
-	err := db.Where("id = ?", u.ID).First(&u).Error
-	if err != nil {
-		// return message about no user found
-		resp := "User with id: " + string(u.ID) + " could not be found"
-		return resp, nil
-	} else {
-		return u, nil
-	}
+	var user User
+	err := db.Where("id = ?", u.ID).First(&user).Error
+	return user, err
 }
 
 /**

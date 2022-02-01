@@ -12,7 +12,7 @@ var DB *gorm.DB
 /**
 * Initialize DB table
  */
-func InitDB(postgresURL string) {
+func InitDB(postgresURL string) *gorm.DB {
 	// setup connection to db
 	db, err := gorm.Open(postgres.Open(postgresURL), &gorm.Config{})
 	if err != nil {
@@ -22,6 +22,7 @@ func InitDB(postgresURL string) {
 	db.AutoMigrate([]models.User{})
 
 	DB = db
+	return DB
 }
 
 /**
