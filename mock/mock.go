@@ -1,60 +1,10 @@
-package models
+package mock
 
 import (
-	"encoding/json"
 	"math/rand"
-	"time"
 
 	"gorm.io/gorm"
 )
-
-/**
-* Setup user struct
- */
-type User struct {
-	gorm.Model
-	FirstName       string    `json:"fname" validate:"required,string"`
-	LastName        string    `json:"lname" validate:"required,string"`
-	PreferredName   string    `json:"pname" validate:"string"`
-	Email           string    `json:"email" validate:"required,email"`
-	Skillset        string    `json:"skills" validate:"required,string"`
-	YearsExperience int       `json:"experience" validate:"numeric"`
-	MemberSince     time.Time `json:"since" validate:"timestamp,lte"`
-}
-
-type UserModel interface {
-	GetRandomSkill() (string, bool)
-	GetFullName() string
-	GetAllUsers(db *gorm.DB) ([]User, error)
-	CreateNewUser(db *gorm.DB) error
-	GetUser(db *gorm.DB) (User, error)
-	GetRandomUser(db *gorm.DB) (User, error)
-	UpdateUser(db *gorm.DB, UserInput User) error
-	DeleteUser(db *gorm.DB) error
-	DeleteAllUsers(db *gorm.DB) error
-}
-
-/**
-* get random skill from user skillset
- */
-func (u *User) GetRandomSkill() (string, bool) {
-	var skillList []string
-	// check if u.Skillset is empty
-	if u.Skillset == "[]" {
-		return "", false
-	}
-	json.Unmarshal([]byte(u.Skillset), &skillList)
-	randomSkill := skillList[rand.Intn(len(skillList))]
-	return randomSkill, true
-}
-
-/**
-* get user full name
- */
-func (u *User) GetFullName() string {
-	name := u.FirstName + " " + u.LastName
-	return name
-}
 
 /**
 * Get All Users - Index

@@ -5,6 +5,11 @@ import (
 	"net/http"
 )
 
+type Responder interface {
+	RespondWithError(w http.ResponseWriter, code int, message string)
+	RespondWithJson(w http.ResponseWriter, code int, payload interface{})
+}
+
 /**
 * Error Response
  */
