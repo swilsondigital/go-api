@@ -11,6 +11,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"github.com/rs/cors"
 	"gorm.io/gorm"
 )
 
@@ -25,12 +26,19 @@ func initRoutes(router *mux.Router, DB *gorm.DB) {
 	u := controllers.UserController{Router: router, DB: DB}
 	u.InitializeUserRoutes()
 
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowCredentials: true,
+	})
+
+	handler := c.Handler(router)
+
 	port, ok := os.LookupEnv("PORT")
 	if !ok {
 		port = "3000"
 	}
 	// log and listen/serve
-	log.Fatal(http.ListenAndServe(":"+port, router))
+	log.Fatal(http.ListenAndServe(":"+port, handler))
 }
 
 /**
