@@ -27,6 +27,26 @@ type UserInput struct {
 	MemberSince     string   `json:"since"` // accepts yyyy-mm-dd
 }
 
+func formatUserInput(input UserInput) (user models.User, err error) {
+	// setup
+	err = nil
+	// convert skillset data to marshalled json
+	skills, _ := json.Marshal(input.Skillset)
+	since, err := time.Parse("2001-01-01", input.MemberSince)
+
+	// map input data to user model
+	user = models.User{
+		FirstName:       input.FirstName,
+		LastName:        input.LastName,
+		PreferredName:   input.PreferredName,
+		Email:           input.Email,
+		Skillset:        string(skills),
+		YearsExperience: input.YearsExperience,
+		MemberSince:     since,
+	}
+	return
+}
+
 /**
 * Get All Users - Index
  */
@@ -51,23 +71,10 @@ func (c *UserController) CreateNewUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// convert skillset data to marshalled json
-	skills, _ := json.Marshal(input.Skillset)
-	since, err := time.Parse("2001-01-01", input.MemberSince)
+	user, err := formatUserInput(input)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
-	}
-
-	// map input data to user model
-	user := models.User{
-		FirstName:       input.FirstName,
-		LastName:        input.LastName,
-		PreferredName:   input.PreferredName,
-		Email:           input.Email,
-		Skillset:        string(skills),
-		YearsExperience: input.YearsExperience,
-		MemberSince:     since,
 	}
 
 	if err := user.CreateNewUser(c.DB); err != nil {
@@ -171,21 +178,13 @@ func (c *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// convert skillset data to marshalled json
-	skills, _ := json.Marshal(input.Skillset)
-
-	// map input data to user model
-	userInput := models.User{
-		FirstName:       input.FirstName,
-		LastName:        input.LastName,
-		PreferredName:   input.PreferredName,
-		Email:           input.Email,
-		Skillset:        string(skills),
-		YearsExperience: input.YearsExperience,
-		MemberSince:     input.MemberSince,
+	userInfoToUpdate, err := formatUserInput(input)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
-	if err := u.UpdateUser(c.DB, userInput); err != nil {
+	if err := u.UpdateUser(c.DB, userInfoToUpdate); err != nil {
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
