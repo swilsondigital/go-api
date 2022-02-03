@@ -29,6 +29,7 @@ func initRoutes(router *mux.Router, DB *gorm.DB) {
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowCredentials: true,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
 	})
 
 	handler := c.Handler(router)
