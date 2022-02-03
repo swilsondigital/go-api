@@ -18,13 +18,13 @@ type UserController struct {
 }
 
 type UserInput struct {
-	FirstName       string    `json:"fname"`
-	LastName        string    `json:"lname"`
-	PreferredName   string    `json:"pname"`
-	Email           string    `json:"email"`
-	Skillset        []string  `json:"skills"`
-	YearsExperience int       `json:"experience"`
-	MemberSince     time.Time `json:"since"`
+	FirstName       string   `json:"fname"`
+	LastName        string   `json:"lname"`
+	PreferredName   string   `json:"pname"`
+	Email           string   `json:"email"`
+	Skillset        []string `json:"skills"`
+	YearsExperience int      `json:"experience"`
+	MemberSince     string   `json:"since"` // accepts yyyy-mm-dd
 }
 
 /**
@@ -53,6 +53,11 @@ func (c *UserController) CreateNewUser(w http.ResponseWriter, r *http.Request) {
 
 	// convert skillset data to marshalled json
 	skills, _ := json.Marshal(input.Skillset)
+	since, err := time.Parse("2001-01-01", input.MemberSince)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	// map input data to user model
 	user := models.User{
@@ -62,7 +67,7 @@ func (c *UserController) CreateNewUser(w http.ResponseWriter, r *http.Request) {
 		Email:           input.Email,
 		Skillset:        string(skills),
 		YearsExperience: input.YearsExperience,
-		MemberSince:     input.MemberSince,
+		MemberSince:     since,
 	}
 
 	if err := user.CreateNewUser(c.DB); err != nil {
