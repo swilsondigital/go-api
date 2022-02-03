@@ -32,7 +32,7 @@ func formatUserInput(input UserInput) (user models.User, err error) {
 	err = nil
 	// convert skillset data to marshalled json
 	skills, _ := json.Marshal(input.Skillset)
-	since, err := time.Parse("2001-01-01", input.MemberSince)
+	since, err := time.Parse("2006-01-02", input.MemberSince)
 
 	// map input data to user model
 	user = models.User{
