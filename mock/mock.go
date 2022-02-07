@@ -1,58 +1,56 @@
 package mock
 
 import (
+	"errors"
+	"fmt"
+	"goapi/models"
 	"math/rand"
-
-	"gorm.io/gorm"
 )
+
+type User struct {
+	models.User
+}
+
+type MockDB []User
 
 /**
 * Get All Users - Index
  */
-func GetAllUsers(db *gorm.DB) ([]User, error) {
-	// setup user query
-	var users []User
-	if err := db.Find(&users).Error; err != nil {
-		return nil, err
-	}
-	return users, nil
+func MockModelGetAllUsers(db MockDB) ([]User, error) {
+	return db, nil
 }
 
 /**
 * Create New User - Create
  */
-func (u *User) CreateNewUser(db *gorm.DB) error {
-	// start transaction for creation
-	db.Transaction(func(tx *gorm.DB) error {
-		// try create
-		if err := tx.Create(&u).Error; err != nil {
-			return err
-		}
-		// return nil commits transaction
-		return nil
-	})
+func (u User) MockModelCreateNewUser(db MockDB) error {
+	db = append(db, u)
 	return nil
 }
 
 /**
 * Get Single User - Read
  */
-func (u *User) GetUser(db *gorm.DB) (User, error) {
-	// get model and check db for user
+func (u User) MockModelGetUser(db MockDB) (User, error) {
 	var user User
-	err := db.Where("id = ?", u.ID).First(&user).Error
+	// setup error incase user doesnt exist
+	err := errors.New(fmt.Sprintf("User with ID %d could not be found", u.ID))
+	for _, v := range db {
+		if v.ID == u.ID {
+			user = v
+			err = nil
+			break
+		}
+	}
+
 	return user, err
 }
 
 /**
 * Get a Random User
  */
-func GetRandomUser(db *gorm.DB) (User, error) {
-	users, err := GetAllUsers(db)
-	if err != nil {
-		return User{}, err
-	}
-
+func MockModelGetRandomUser(db MockDB) (User, error) {
+	users := db
 	// select random user and return
 	randomUser := users[rand.Intn(len(users))]
 	return randomUser, nil
@@ -61,49 +59,51 @@ func GetRandomUser(db *gorm.DB) (User, error) {
 /**
 * Update Single User - Update
  */
-func (u *User) UpdateUser(db *gorm.DB, UserInput User) error {
-	// start transaction for update
-	db.Transaction(func(tx *gorm.DB) error {
-		// try create
-		if err := tx.Model(&u).Updates(UserInput).Error; err != nil {
-			return err
-		}
-		// return nil commits transaction
-		return nil
-	})
+func (u User) MockModelUpdateUser(db MockDB, UserInput User) error {
+	user, err := u.MockModelGetUser(db)
+	if err != nil {
+		return err
+	}
 
+	for key, v := range db {
+		if user.ID == v.ID {
+			db[key] = UserInput
+			break
+		}
+	}
 	return nil
 }
 
 /**
 * Delete Single User - Delete
  */
-func (u *User) DeleteUser(db *gorm.DB) error {
+func (u User) MockModelDeleteUser(db MockDB) error {
 
-	// start transaction for deletion
-	db.Transaction(func(tx *gorm.DB) error {
-		// try create
-		if err := tx.Delete(&u).Error; err != nil {
-			return err
+	user, err := u.MockModelGetUser(db)
+	if err != nil {
+		return err
+	}
+
+	var index int
+
+	for key, v := range db {
+		if user.ID == v.ID {
+			index = key
+			break
 		}
-		// return nil commits transaction
-		return nil
-	})
+	}
+	// replace with last element
+	db[index] = db[len(db)-1]
+	// remove last element
+	db = db[:len(db)-1]
+
 	return nil
 }
 
 /**
 * Delete All Users - DeleteAll
  */
-func DeleteAllUsers(db *gorm.DB) error {
-	users, err := GetAllUsers(db)
-	if err != nil {
-		return err
-	}
-
-	// loop through users models and delete
-	for _, user := range users {
-		db.Delete(&user)
-	}
+func MockModelDeleteAllUsers(db MockDB) error {
+	db = []User{}
 	return nil
 }

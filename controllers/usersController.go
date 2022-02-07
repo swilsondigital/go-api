@@ -13,8 +13,8 @@ import (
 )
 
 type UserController struct {
-	Router *mux.Router
-	DB     *gorm.DB
+	// Router *mux.Router
+	DB *gorm.DB
 }
 
 type UserInput struct {

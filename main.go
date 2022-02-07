@@ -2,57 +2,51 @@ package main
 
 import (
 	"fmt"
-	"goapi/controllers"
 	"goapi/database"
-	h "goapi/pages"
-	"log"
-	"net/http"
+	"goapi/pages"
 	"os"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"github.com/rs/cors"
-	"gorm.io/gorm"
 )
 
 /**
 * Handle routing
  */
-func initRoutes(router *mux.Router, DB *gorm.DB) {
+func initRoutes(router *gin.Engine) {
 	// homepage route
-	router.HandleFunc("/", h.ShowHomePage).Methods("GET")
-
-	// user routes
-	u := controllers.UserController{Router: router, DB: DB}
-	u.InitializeUserRoutes()
-
-	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowCredentials: true,
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
-	})
-
-	handler := c.Handler(router)
-
-	port, ok := os.LookupEnv("PORT")
-	if !ok {
-		port = "3000"
-	}
-	// log and listen/serve
-	log.Fatal(http.ListenAndServe(":"+port, handler))
+	router.GET("/", pages.ShowHomePage)
 }
 
 /**
 * Main output
  */
 func main() {
-	// init message
-	fmt.Println("Initializing Rest User API")
 	if err := godotenv.Load(".env"); err != nil {
 		fmt.Println("No local env detected")
 	}
 	postgresURL := os.Getenv("DATABASE_URL")
-	DB := database.InitDB(postgresURL)
-	router := mux.NewRouter().StrictSlash(true)
-	initRoutes(router, DB)
+	database.InitDB(postgresURL)
+	database.Automigrate()
+
+	// setup app
+	app := gin.Default()
+	// set cors
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{"GET", "POST", "PUT", "DELETE"},
+	}))
+	// set to listen
+	port, ok := os.LookupEnv("PORT")
+	if !ok {
+		port = "3000"
+	}
+
+	// initalize routes
+	initRoutes(app)
+
+	// serve
+	app.Run(":" + port)
+
 }

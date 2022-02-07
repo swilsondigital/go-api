@@ -1,10 +1,9 @@
 package pages
 
 import (
-	"html/template"
-	"net/http"
-	"os"
-	"path"
+	"fmt"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Home struct {
@@ -15,29 +14,29 @@ type Home struct {
 /**
 * display the homepage
  */
-func ShowHomePage(w http.ResponseWriter, r *http.Request) {
+func ShowHomePage(c *gin.Context) {
+	fmt.Println(c.FullPath())
+	// // get url
+	// url := r.Host
 
-	// get url
-	url := r.Host
+	// // get working directory
+	// cwd, err := os.Getwd()
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	// get working directory
-	cwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
+	// // set home object
+	// home := Home{"Welcome", url}
 
-	// set home object
-	home := Home{"Welcome", url}
+	// // setup template
+	// fp := path.Join(cwd, "templates", "index.html")
+	// tmpl, err := template.ParseFiles(fp)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
 
-	// setup template
-	fp := path.Join(cwd, "templates", "index.html")
-	tmpl, err := template.ParseFiles(fp)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if err := tmpl.Execute(w, home); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	// if err := tmpl.Execute(w, home); err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// }
 }
