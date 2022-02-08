@@ -4,5 +4,7 @@ import "gorm.io/gorm"
 
 type Technology struct {
 	gorm.Model
-	Name string
+	Name string `gorm:"unique"`
 }
+
+type Technologies []*Technology

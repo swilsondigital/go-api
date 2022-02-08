@@ -2,252 +2,210 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
+	"goapi/database"
 	"goapi/models"
+	"goapi/repository"
 	"net/http"
-	"strconv"
 	"time"
 
-	"github.com/gorilla/mux"
-	"gorm.io/gorm"
+	"github.com/gin-gonic/gin"
 )
 
-type UserController struct {
-	// Router *mux.Router
-	DB *gorm.DB
+type userController struct {
+	// place for auth later
+	userRepository repository.UserRepository
+}
+type UserController interface {
+	GetAllUsers(c *gin.Context)
+	GetUserById(c *gin.Context)
+	CreateUser(c *gin.Context)
+	UpdateUser(c *gin.Context)
+	DeleteUser(c *gin.Context)
 }
 
+/**
+* expected format of json post/put requests
+ **/
 type UserInput struct {
 	FirstName       string   `json:"fname"`
 	LastName        string   `json:"lname"`
 	PreferredName   string   `json:"pname"`
 	Email           string   `json:"email"`
-	Skillset        []string `json:"skills"`
+	Phone           string   `json:"phone"`
+	Technologies    []string `json:"technologies"`
 	YearsExperience int      `json:"experience"`
 	MemberSince     string   `json:"since"` // accepts yyyy-mm-dd
 }
 
-func formatUserInput(input UserInput) (user models.User, err error) {
-	// setup
-	err = nil
-	// convert skillset data to marshalled json
-	skills, _ := json.Marshal(input.Skillset)
+/**
+* Setup New User Controller
+ **/
+func NewUserController(ur repository.UserRepository) UserController {
+	return userController{userRepository: ur}
+}
+
+/**
+* Get All Users
+ **/
+func (uc userController) GetAllUsers(c *gin.Context) {
+	users, err := uc.userRepository.FindAllUsers()
+	if err != nil {
+		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
+		return
+	}
+	RespondWithJson(c.Writer, http.StatusOK, users)
+}
+
+/**
+* Get User By ID
+ **/
+func (uc userController) GetUserById(c *gin.Context) {
+	id := c.Param("id")
+	user, err := uc.userRepository.FindUserById(id)
+	if err != nil {
+		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
+		return
+	}
+	RespondWithJson(c.Writer, http.StatusOK, user)
+}
+
+/**
+* Create New User
+ **/
+func (uc userController) CreateUser(c *gin.Context) {
+	// Get POST data
+	var input UserInput
+	err := json.NewDecoder(c.Request.Body).Decode(&input)
+	// print error if any
+	if err != nil {
+		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// format User model for creation
+	// convert Technologies and parse member since
 	since, err := time.Parse("2006-01-02", input.MemberSince)
+	if err != nil {
+		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
+		return
+	}
+	var technologies []models.Technology
+	for _, v := range input.Technologies {
+		var tech models.Technology
+		database.DB.Where(models.Technology{Name: v}).FirstOrInit(&tech)
+		technologies = append(technologies, tech)
+	}
 
 	// map input data to user model
-	user = models.User{
-		FirstName:       input.FirstName,
-		LastName:        input.LastName,
-		PreferredName:   input.PreferredName,
-		Email:           input.Email,
-		Skillset:        string(skills),
+	user := models.User{
+		FirstName:     input.FirstName,
+		LastName:      input.LastName,
+		PreferredName: input.PreferredName,
+		Email:         input.Email,
+		Phone:         input.Phone,
+	}
+
+	// map input for profile
+	profile := models.Profile{
+		Technologies:    technologies,
 		YearsExperience: input.YearsExperience,
 		MemberSince:     since,
 	}
-	return
-}
 
-/**
-* Get All Users - Index
- */
-func (c *UserController) GetAllUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := models.GetAllUsers(c.DB)
+	// TODO: check if profile should be created (a client contact)
+	user.Profile = profile
+
+	// TODO: assign roles
+
+	// create user with repo
+	u, err := uc.userRepository.CreateUser(user)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
 		return
 	}
-	RespondWithJson(w, http.StatusOK, users)
+	RespondWithJson(c.Writer, http.StatusOK, u)
 }
 
 /**
-* Create New User - Create
- */
-func (c *UserController) CreateNewUser(w http.ResponseWriter, r *http.Request) {
+* Updated Existing User
+ **/
+func (uc userController) UpdateUser(c *gin.Context) {
+	// Get POST data
 	var input UserInput
-	err := json.NewDecoder(r.Body).Decode(&input)
+	err := json.NewDecoder(c.Request.Body).Decode(&input)
 	// print error if any
 	if err != nil {
-		fmt.Println(err)
+		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	user, err := formatUserInput(input)
+	// get current User
+	id := c.Param("id")
+	user, err := uc.userRepository.FindUserById(id)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	if err := user.CreateNewUser(c.DB); err != nil {
-		RespondWithError(w, http.StatusInternalServerError, err.Error())
+	// map input data to user model
+	newUserModel := models.User{
+		FirstName:     input.FirstName,
+		LastName:      input.LastName,
+		PreferredName: input.PreferredName,
+		Email:         input.Email,
+		Phone:         input.Phone,
+	}
+
+	// load profile if available
+	if input.Technologies != nil || input.YearsExperience != 0 || input.MemberSince != "" {
+		var profile models.Profile
+		database.DB.Preload("Technologies").Model(&user).Association("Profile").Find(&profile)
+
+		// parse since time
+		since, err := time.Parse("2006-01-02", input.MemberSince)
+		if err != nil {
+			RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		// assign memberSince and Years Experience
+		profile.MemberSince = since
+		profile.YearsExperience = input.YearsExperience
+
+		// update associations to technologies
+		if input.Technologies != nil {
+			var technologies []models.Technology
+			for _, v := range input.Technologies {
+				var tech models.Technology
+				database.DB.Where(models.Technology{Name: v}).FirstOrInit(&tech)
+				technologies = append(technologies, tech)
+			}
+
+			database.DB.Model(&profile).Association("Technologies").Replace(technologies)
+		}
+
+		newUserModel.Profile = profile
+
+	}
+	// RespondWithJson(c.Writer, http.StatusOK, newUserModel)
+	// update user
+	updatedUser, err := uc.userRepository.UpdateUser(user, newUserModel)
+	if err != nil {
+		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
 		return
 	}
-	RespondWithJson(w, http.StatusOK, user)
+	RespondWithJson(c.Writer, http.StatusOK, updatedUser)
 }
 
 /**
-* Get Single User - Read
- */
-func (c *UserController) GetUser(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.ParseUint(vars["id"], 10, 0)
+* Delete User
+ **/
+func (uc userController) DeleteUser(c *gin.Context) {
+	id := c.Param("id")
+	err := uc.userRepository.DeleteUserById(id)
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Invalid User ID")
+		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	user := models.User{}
-	user.ID = uint(id)
-	resp, err := user.GetUser(c.DB)
-	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	RespondWithJson(w, http.StatusOK, resp)
-}
-
-/**
-* Get single user and show formatted data
- */
-func (c *UserController) IntroduceUser(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.ParseUint(vars["id"], 10, 0)
-	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Invalid User ID")
-		return
-	}
-
-	user := models.User{}
-	user.ID = uint(id)
-	u, err := user.GetUser(c.DB)
-	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	greeting := "Hello! My name is " + u.GetFullName() + "."
-	var name string
-	// add preferred name to greeting
-	if u.PreferredName != "" {
-		name = u.PreferredName
-	} else {
-		name = u.FirstName
-	}
-	greeting += " You can call me " + name + "."
-	// check for random skill
-	if randSkill, ok := u.GetRandomSkill(); ok {
-		greeting += " I have experience with " + randSkill + "."
-	}
-	RespondWithJson(w, http.StatusOK, greeting)
-}
-
-/**
-* Get a Random User
- */
-func (c *UserController) GetRandomUser(w http.ResponseWriter, r *http.Request) {
-	user, err := models.GetRandomUser(c.DB)
-	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Could not get random user")
-		return
-	}
-	// select random user and return
-	RespondWithJson(w, http.StatusOK, user)
-}
-
-/**
-* Update Single User - Update
- */
-func (c *UserController) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.ParseUint(vars["id"], 10, 0)
-	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Invalid User ID")
-		return
-	}
-
-	user := models.User{}
-	user.ID = uint(id)
-	u, err := user.GetUser(c.DB)
-	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	var input UserInput
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	userInfoToUpdate, err := formatUserInput(input)
-	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	if err := u.UpdateUser(c.DB, userInfoToUpdate); err != nil {
-		RespondWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	RespondWithJson(w, http.StatusOK, user)
-}
-
-/**
-* Delete Single User - Delete
- */
-func (c *UserController) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.ParseUint(vars["id"], 10, 0)
-	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Invalid User ID")
-		return
-	}
-
-	user := models.User{}
-	user.ID = uint(id)
-	u, err := user.GetUser(c.DB)
-	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	if err := u.DeleteUser(c.DB); err != nil {
-		RespondWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	RespondWithJson(w, http.StatusOK, u)
-}
-
-/**
-* Delete All Users - DeleteAll
- */
-func (c *UserController) DeleteAllUsers(w http.ResponseWriter, r *http.Request) {
-	if err := models.DeleteAllUsers(c.DB); err != nil {
-		RespondWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	RespondWithJson(w, http.StatusOK, "All Users Deleted")
-}
-
-/**
-* Initialize Routes
- */
-func (c *UserController) InitializeUserRoutes() {
-	// get random user
-	c.Router.HandleFunc("/random-user", c.GetRandomUser).Methods("GET")
-	// user subrouter paths
-	userRouter := c.Router.PathPrefix("/users").Subrouter()
-	// create new user
-	userRouter.HandleFunc("/", c.CreateNewUser).Methods("POST")
-	// get all users
-	userRouter.HandleFunc("/", c.GetAllUsers).Methods("GET")
-	// get single user
-	userRouter.HandleFunc("/{id}", c.GetUser).Methods("GET")
-	// update single user
-	userRouter.HandleFunc("/{id}", c.UpdateUser).Methods("PUT")
-	// delete single user
-	userRouter.HandleFunc("/{id}", c.DeleteUser).Methods("DELETE")
-	// get single user
-	userRouter.HandleFunc("/{id}/hello", c.IntroduceUser).Methods("GET")
-	// delete all users
-	userRouter.HandleFunc("/", c.DeleteAllUsers).Methods("DELETE")
+	RespondWithJson(c.Writer, http.StatusOK, "User Deleted Successfully")
 }

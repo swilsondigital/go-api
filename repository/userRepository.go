@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"math/rand"
+	"goapi/models"
 
 	"gorm.io/gorm"
 )
@@ -11,128 +11,73 @@ type userRepository struct {
 }
 
 type UserRepository interface {
-}
-
-// /**
-// * get random skill from user skillset
-//  */
-// func (u *User) GetRandomSkill() (string, bool) {
-// 	var skillList []string
-// 	// check if u.Skillset is empty
-// 	if u.Skillset == "[]" {
-// 		return "", false
-// 	}
-// 	json.Unmarshal([]byte(u.Skillset), &skillList)
-// 	randomSkill := skillList[rand.Intn(len(skillList))]
-// 	return randomSkill, true
-// }
-
-/**
-* get user full name
- */
-func (u *User) GetFullName() string {
-	name := u.FirstName + " " + u.LastName
-	return name
+	FindAllUsers() (models.Users, error)
+	FindUserById(id string) (models.User, error)
+	FindUserByEmail(email string) (models.User, error)
+	CreateUser(user models.User) (models.User, error)
+	UpdateUser(user models.User, updatedValues models.User) (models.User, error)
+	DeleteUserById(id string) error
 }
 
 /**
-* Get All Users - Index
- */
-func GetAllUsers(db *gorm.DB) ([]User, error) {
-	// setup user query
-	var users []User
-	if err := db.Find(&users).Error; err != nil {
-		return nil, err
-	}
-	return users, nil
+* Generate New User Repository
+ **/
+func NewUserRepository(db *gorm.DB) UserRepository {
+	return userRepository{DB: db}
 }
 
 /**
-* Create New User - Create
- */
-func (u *User) CreateNewUser(db *gorm.DB) error {
-	// start transaction for creation
-	db.Transaction(func(tx *gorm.DB) error {
-		// try create
-		if err := tx.Create(&u).Error; err != nil {
-			return err
-		}
-		// return nil commits transaction
-		return nil
-	})
-	return nil
+* Get all users
+ **/
+func (u userRepository) FindAllUsers() (users models.Users, err error) {
+	err = u.DB.Find(&users).Error
+	return users, err
 }
 
 /**
-* Get Single User - Read
- */
-func (u *User) GetUser(db *gorm.DB) (User, error) {
-	// get model and check db for user
-	var user User
-	err := db.Where("id = ?", u.ID).First(&user).Error
+* Get single user by id
+ **/
+func (u userRepository) FindUserById(id string) (user models.User, err error) {
+	err = u.DB.Where("id = ?", id).First(&user).Error
 	return user, err
 }
 
 /**
-* Get a Random User
- */
-func GetRandomUser(db *gorm.DB) (User, error) {
-	users, err := GetAllUsers(db)
-	if err != nil {
-		return User{}, err
-	}
-
-	// select random user and return
-	randomUser := users[rand.Intn(len(users))]
-	return randomUser, nil
+* Get single user by id
+ **/
+func (u userRepository) FindUserByEmail(email string) (user models.User, err error) {
+	err = u.DB.Where("email = ?", email).First(&user).Error
+	return user, err
 }
 
 /**
-* Update Single User - Update
- */
-func (u *User) UpdateUser(db *gorm.DB, UserInput User) error {
-	// start transaction for update
-	db.Transaction(func(tx *gorm.DB) error {
-		// try create
-		if err := tx.Model(&u).Updates(UserInput).Error; err != nil {
-			return err
-		}
-		// return nil commits transaction
-		return nil
-	})
-
-	return nil
+* Create a new user
+ **/
+func (u userRepository) CreateUser(user models.User) (models.User, error) {
+	err := u.DB.Create(&user).Error
+	return user, err
 }
 
 /**
-* Delete Single User - Delete
- */
-func (u *User) DeleteUser(db *gorm.DB) error {
+* Update user
+ **/
+func (u userRepository) UpdateUser(user models.User, updatedValues models.User) (models.User, error) {
+	// update base user model
+	err := u.DB.Model(&user).Updates(updatedValues).Error
+	if updatedValues.Profile.UserID == user.ID {
+		// update Associated Profile
+		u.DB.Model(&user).Association("Profile").Replace(&updatedValues.Profile)
+	} else {
+		u.DB.Model(&user).Association("Profile").Append(&updatedValues.Profile)
+	}
 
-	// start transaction for deletion
-	db.Transaction(func(tx *gorm.DB) error {
-		// try create
-		if err := tx.Delete(&u).Error; err != nil {
-			return err
-		}
-		// return nil commits transaction
-		return nil
-	})
-	return nil
+	return user, err
 }
 
 /**
-* Delete All Users - DeleteAll
- */
-func DeleteAllUsers(db *gorm.DB) error {
-	users, err := GetAllUsers(db)
-	if err != nil {
-		return err
-	}
-
-	// loop through users models and delete
-	for _, user := range users {
-		db.Delete(&user)
-	}
-	return nil
+* Delete user by ID
+ **/
+func (u userRepository) DeleteUserById(id string) error {
+	err := u.DB.Delete(&models.User{}, id).Error
+	return err
 }

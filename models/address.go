@@ -10,6 +10,6 @@ type Address struct {
 	State_Province string
 	Postal_Code    string
 	Country        string
-	ClientID       int
+	ClientID       uint
 	Client         Client
 }

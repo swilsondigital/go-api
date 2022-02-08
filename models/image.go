@@ -5,6 +5,6 @@ import "gorm.io/gorm"
 type Image struct {
 	gorm.Model
 	Blob      string
-	OwnerID   int
+	OwnerID   uint
 	OwnerType string
 }

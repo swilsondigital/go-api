@@ -9,10 +9,12 @@ import (
 type Project struct {
 	gorm.Model
 	Name          string
-	ClientID      int
+	ClientID      uint
 	Client        Client
 	Technologies  []Technology `gorm:"many2many:project_technologies"`
 	Start_Date    time.Time
 	Delivery_Date time.Time
 	Private       bool
 }
+
+type Projects []*Project

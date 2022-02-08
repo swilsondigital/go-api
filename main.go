@@ -3,21 +3,13 @@ package main
 import (
 	"fmt"
 	"goapi/database"
-	"goapi/pages"
+	"goapi/routes"
 	"os"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
-
-/**
-* Handle routing
- */
-func initRoutes(router *gin.Engine) {
-	// homepage route
-	router.GET("/", pages.ShowHomePage)
-}
 
 /**
 * Main output
@@ -44,7 +36,7 @@ func main() {
 	}
 
 	// initalize routes
-	initRoutes(app)
+	routes.Setup(app)
 
 	// serve
 	app.Run(":" + port)

@@ -8,8 +8,7 @@ import (
 
 type Profile struct {
 	gorm.Model
-	UserID          int
-	User            User
+	UserID          uint
 	Technologies    []Technology `json:"technology" gorm:"many2many:profile_technologies"`
 	YearsExperience int          `json:"experience" validate:"numeric"`
 	MemberSince     time.Time    `json:"since" validate:"timestamp,lte"`

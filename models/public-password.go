@@ -1,8 +1,10 @@
 package models
 
 type PublicPassword struct {
-	ID          int
+	ID          uint
 	Password    string
 	ClientName  string
 	ContactName string
 }
+
+type PublicPasswords []*PublicPassword
