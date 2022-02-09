@@ -27,14 +27,14 @@ type UserController interface {
 * expected format of json post/put requests
  **/
 type UserInput struct {
-	FirstName       string   `json:"fname"`
-	LastName        string   `json:"lname"`
-	PreferredName   string   `json:"pname"`
-	Email           string   `json:"email"`
-	Phone           string   `json:"phone"`
-	Technologies    []string `json:"technologies"`
-	YearsExperience int      `json:"experience"`
-	MemberSince     string   `json:"since"` // accepts yyyy-mm-dd
+	FirstName       string
+	LastName        string
+	PreferredName   string
+	Email           string
+	Phone           string
+	Technologies    []string
+	YearsExperience int
+	MemberSince     string // accepts yyyy-mm-dd
 }
 
 /**
@@ -82,20 +82,6 @@ func (uc userController) CreateUser(c *gin.Context) {
 		return
 	}
 
-	// format User model for creation
-	// convert Technologies and parse member since
-	since, err := time.Parse("2006-01-02", input.MemberSince)
-	if err != nil {
-		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
-		return
-	}
-	var technologies []models.Technology
-	for _, v := range input.Technologies {
-		var tech models.Technology
-		database.DB.Where(models.Technology{Name: v}).FirstOrInit(&tech)
-		technologies = append(technologies, tech)
-	}
-
 	// map input data to user model
 	user := models.User{
 		FirstName:     input.FirstName,
@@ -105,15 +91,30 @@ func (uc userController) CreateUser(c *gin.Context) {
 		Phone:         input.Phone,
 	}
 
-	// map input for profile
-	profile := models.Profile{
-		Technologies:    technologies,
-		YearsExperience: input.YearsExperience,
-		MemberSince:     since,
-	}
+	if input.Technologies != nil || input.YearsExperience != 0 || input.MemberSince != "" {
+		// convert Technologies and parse member since
+		since, err := time.Parse("2006-01-02", input.MemberSince)
+		if err != nil {
+			RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
+			return
+		}
+		var technologies []models.Technology
+		for _, v := range input.Technologies {
+			var tech models.Technology
+			database.DB.Where(models.Technology{Name: v}).FirstOrInit(&tech)
+			technologies = append(technologies, tech)
+		}
 
-	// TODO: check if profile should be created (a client contact)
-	user.Profile = profile
+		// map input for profile
+		profile := models.Profile{
+			Technologies:    &technologies,
+			YearsExperience: input.YearsExperience,
+			MemberSince:     since,
+		}
+
+		// TODO: check if profile should be created (a client contact)
+		user.Profile = &profile
+	}
 
 	// TODO: assign roles
 
@@ -181,10 +182,10 @@ func (uc userController) UpdateUser(c *gin.Context) {
 				technologies = append(technologies, tech)
 			}
 
-			database.DB.Model(&profile).Association("Technologies").Replace(technologies)
+			database.DB.Model(&profile).Association("Technologies").Replace(&technologies)
 		}
 
-		newUserModel.Profile = profile
+		newUserModel.Profile = &profile
 
 	}
 	// RespondWithJson(c.Writer, http.StatusOK, newUserModel)

@@ -4,6 +4,7 @@ import (
 	"goapi/models"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type userRepository struct {
@@ -30,7 +31,7 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 * Get all users
  **/
 func (u userRepository) FindAllUsers() (users models.Users, err error) {
-	err = u.DB.Find(&users).Error
+	err = u.DB.Preload(clause.Associations).Find(&users).Error
 	return users, err
 }
 
@@ -38,7 +39,7 @@ func (u userRepository) FindAllUsers() (users models.Users, err error) {
 * Get single user by id
  **/
 func (u userRepository) FindUserById(id string) (user models.User, err error) {
-	err = u.DB.Where("id = ?", id).First(&user).Error
+	err = u.DB.Preload(clause.Associations).Where("id = ?", id).First(&user).Error
 	return user, err
 }
 
@@ -46,7 +47,7 @@ func (u userRepository) FindUserById(id string) (user models.User, err error) {
 * Get single user by id
  **/
 func (u userRepository) FindUserByEmail(email string) (user models.User, err error) {
-	err = u.DB.Where("email = ?", email).First(&user).Error
+	err = u.DB.Preload(clause.Associations).Where("email = ?", email).First(&user).Error
 	return user, err
 }
 
@@ -64,13 +65,17 @@ func (u userRepository) CreateUser(user models.User) (models.User, error) {
 func (u userRepository) UpdateUser(user models.User, updatedValues models.User) (models.User, error) {
 	// update base user model
 	err := u.DB.Model(&user).Updates(updatedValues).Error
-	if updatedValues.Profile.UserID == user.ID {
+
+	// upsert Profile
+	if updatedValues.Profile.UserID != 0 {
 		// update Associated Profile
-		u.DB.Model(&user).Association("Profile").Replace(&updatedValues.Profile)
-	} else {
 		u.DB.Model(&user).Association("Profile").Append(&updatedValues.Profile)
+	} else {
+		u.DB.Model(&user).Association("Profile").Clear()
 	}
 
+	// save to make sure everything persists
+	u.DB.Save(&user)
 	return user, err
 }
 

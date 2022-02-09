@@ -9,8 +9,8 @@ import (
 type Profile struct {
 	gorm.Model
 	UserID          uint
-	Technologies    []Technology `json:"technology" gorm:"many2many:profile_technologies"`
-	YearsExperience int          `json:"experience" validate:"numeric"`
-	MemberSince     time.Time    `json:"since" validate:"timestamp,lte"`
-	ProfilePhoto    Image        `gorm:"polymorphic:Owner;"`
+	Technologies    *[]Technology `gorm:"many2many:profile_technologies"`
+	YearsExperience int           `validate:"numeric"`
+	MemberSince     time.Time     `validate:"timestamp,lte"`
+	ProfilePhoto    *Image        `gorm:"polymorphic:Owner;"`
 }

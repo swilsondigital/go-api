@@ -12,9 +12,10 @@ type projectRepository struct {
 
 type ProjectRepository interface {
 	FindAllProjects() (models.Projects, error)
+	FindAllProjectsByClientId(id string) (models.Projects, error)
 	FindProjectById(id string) (models.Project, error)
 	CreateProject(project models.Project) (models.Project, error)
-	UpdateProjectById(id string, updatedValues models.Project) error
+	UpdateProject(project models.Project, updatedValues models.Project) (models.Project, error)
 	DeleteProjectById(id string) error
 }
 
@@ -29,7 +30,15 @@ func NewProjectRepository(db *gorm.DB) ProjectRepository {
 * Get all Projects
  **/
 func (p projectRepository) FindAllProjects() (projects models.Projects, err error) {
-	err = p.DB.Find(&projects).Error
+	err = p.DB.Preload("Client.Logo").Find(&projects).Error
+	return projects, err
+}
+
+/**
+* Get All Projects By Client ID
+ **/
+func (p projectRepository) FindAllProjectsByClientId(id string) (projects models.Projects, err error) {
+	err = p.DB.Preload("Client.Logo").Where("client_id = ?", id).Find(&projects).Error
 	return projects, err
 }
 
@@ -37,7 +46,7 @@ func (p projectRepository) FindAllProjects() (projects models.Projects, err erro
 * Get single Project by id
  **/
 func (p projectRepository) FindProjectById(id string) (project models.Project, err error) {
-	err = p.DB.Where("id = ?", id).First(&project).Error
+	err = p.DB.Preload("Client.Logo").Where("id = ?", id).First(&project).Error
 	return project, err
 }
 
@@ -52,9 +61,19 @@ func (p projectRepository) CreateProject(project models.Project) (models.Project
 /**
 * Update Project by id
  **/
-func (p projectRepository) UpdateProjectById(id string, updatedValues models.Project) error {
-	err := p.DB.Model(&models.Project{}).Where("id = ?", id).Updates(updatedValues).Error
-	return err
+func (p projectRepository) UpdateProject(project models.Project, updatedValues models.Project) (models.Project, error) {
+	err := p.DB.Model(&project).Updates(updatedValues).Error
+
+	// upsert technologies
+	if updatedValues.Technologies != nil {
+		p.DB.Model(&project).Association("Technologies").Replace(&updatedValues.Technologies)
+	} else {
+		p.DB.Model(&project).Association("Technologies").Clear()
+	}
+
+	// save to make sure everything persists
+	p.DB.Save(&project)
+	return project, err
 }
 
 /**

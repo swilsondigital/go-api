@@ -4,14 +4,14 @@ import "goapi/models"
 
 func Automigrate() {
 	err := DB.AutoMigrate(
-		&models.Address{},
-		&models.Client{},
+		&models.Technology{},
 		&models.Image{},
+		&models.User{},
+		&models.Client{},
+		&models.Address{},
 		&models.PortfolioRecord{},
 		&models.Profile{},
 		&models.Project{},
-		&models.Technology{},
-		&models.User{},
 	)
 	if err != nil {
 		panic(err)

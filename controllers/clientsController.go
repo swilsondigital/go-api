@@ -1,6 +1,9 @@
 package controllers
 
 import (
+	"encoding/json"
+	"goapi/database"
+	"goapi/models"
 	"goapi/repository"
 	"net/http"
 
@@ -23,15 +26,12 @@ type ClientController interface {
 * expected format of json post/put requests
  **/
 type ClientInput struct {
-	ID              int      `json:"id"`
-	FirstName       string   `json:"fname"`
-	LastName        string   `json:"lname"`
-	PreferredName   string   `json:"pname"`
-	Email           string   `json:"email"`
-	Phone           string   `json:"phone"`
-	Technologies    []string `json:"technologies"`
-	YearsExperience int      `json:"experience"`
-	MemberSince     string   `json:"since"` // accepts yyyy-mm-dd
+	Name    string
+	Phone   string
+	Private bool
+	Logo    string
+	Contact map[string]string
+	Address map[string]string
 }
 
 /**
@@ -71,92 +71,132 @@ func (cc clientController) GetClientById(c *gin.Context) {
  **/
 func (cc clientController) CreateClient(c *gin.Context) {
 	// Get POST data
-	// var input ClientInput
-	// err := json.NewDecoder(c.Request.Body).Decode(&input)
-	// // print error if any
-	// if err != nil {
-	// 	RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
-	// 	return
-	// }
+	var input ClientInput
+	err := json.NewDecoder(c.Request.Body).Decode(&input)
+	// print error if any
+	if err != nil {
+		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
+		return
+	}
 
-	// // create Client with repo
-	// u, err := cc.clientRepository.CreateClient(Client)
-	// if err != nil {
-	// 	RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
-	// 	return
-	// }
-	// RespondWithJson(c.Writer, http.StatusOK, u)
+	// map data to new client type
+	client := models.Client{
+		Name:    input.Name,
+		Phone:   input.Phone,
+		Private: input.Private,
+	}
+
+	// check for client address
+	if input.Address != nil {
+		address := models.Address{
+			Address_1:      input.Address["Address_1"],
+			Address_2:      input.Address["Address_2"],
+			City:           input.Address["City"],
+			State_Province: input.Address["State_Province"],
+			Postal_Code:    input.Address["Postal_Code"],
+			Country:        input.Address["Country"],
+		}
+		client.Address = &address
+	}
+
+	// check for client contacts
+	if input.Contact != nil {
+		user := models.User{
+			FirstName:     input.Contact["FirstName"],
+			LastName:      input.Contact["LastName"],
+			PreferredName: input.Contact["PreferredName"],
+			Email:         input.Contact["Email"],
+			Phone:         input.Contact["Phone"],
+		}
+		database.DB.Where(user).FirstOrInit(&user)
+		client.Contact = &user
+	}
+
+	// check for client logo
+	if input.Logo != "" {
+		logo := models.Image{
+			Blob: input.Logo,
+		}
+		client.Logo = &logo
+	}
+
+	// create Client with repo
+	u, err := cc.clientRepository.CreateClient(client)
+	if err != nil {
+		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
+		return
+	}
+	RespondWithJson(c.Writer, http.StatusOK, u)
 }
 
 /**
 * Updated Existing Client
  **/
 func (cc clientController) UpdateClient(c *gin.Context) {
-	// // Get POST data
-	// var input ClientInput
-	// err := json.NewDecoder(c.Request.Body).Decode(&input)
-	// // print error if any
-	// if err != nil {
-	// 	RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
-	// 	return
-	// }
+	// Get POST data
+	var input ClientInput
+	err := json.NewDecoder(c.Request.Body).Decode(&input)
+	// print error if any
+	if err != nil {
+		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
+		return
+	}
 
-	// // get current Client
-	// id := c.Param("id")
-	// Client, err := cc.clientRepository.FindClientById(id)
-	// if err != nil {
-	// 	RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
-	// 	return
-	// }
+	// get current client
+	id := c.Param("id")
+	client, err := cc.clientRepository.FindClientById(id)
+	if err != nil {
+		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
+		return
+	}
 
-	// // map input data to Client model
-	// newClientModel := models.Client{
-	// 	FirstName:     input.FirstName,
-	// 	LastName:      input.LastName,
-	// 	PreferredName: input.PreferredName,
-	// 	Email:         input.Email,
-	// 	Phone:         input.Phone,
-	// }
+	newClientModel := models.Client{
+		Name:    input.Name,
+		Phone:   input.Phone,
+		Private: input.Private,
+	}
 
-	// // load profile if available
-	// if input.Technologies != nil || input.YearsExperience != 0 || input.MemberSince != "" {
-	// 	var profile models.Profile
-	// 	database.DB.Preload("Technologies").Model(&Client).Association("Profile").Find(&profile)
+	// check for client address
+	if input.Address != nil {
+		address := models.Address{
+			Address_1:      input.Address["Address_1"],
+			Address_2:      input.Address["Address_2"],
+			City:           input.Address["City"],
+			State_Province: input.Address["State_Province"],
+			Postal_Code:    input.Address["Postal_Code"],
+			Country:        input.Address["Country"],
+		}
+		newClientModel.Address = &address
+	}
 
-	// 	// parse since time
-	// 	since, err := time.Parse("2006-01-02", input.MemberSince)
-	// 	if err != nil {
-	// 		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
-	// 		return
-	// 	}
+	// check for client contacts
+	if input.Contact != nil {
+		user := models.User{
+			FirstName:     input.Contact["FirstName"],
+			LastName:      input.Contact["LastName"],
+			PreferredName: input.Contact["PreferredName"],
+			Email:         input.Contact["Email"],
+			Phone:         input.Contact["Phone"],
+		}
+		database.DB.Where(user).FirstOrInit(&user)
+		newClientModel.Contact = &user
+	}
 
-	// 	// assign memberSince and Years Experience
-	// 	profile.MemberSince = since
-	// 	profile.YearsExperience = input.YearsExperience
+	// check for client logo
+	if input.Logo != "" {
+		logo := models.Image{
+			Blob: input.Logo,
+		}
+		newClientModel.Logo = &logo
+	}
 
-	// 	// update associations to technologies
-	// 	if input.Technologies != nil {
-	// 		var technologies []models.Technology
-	// 		for _, v := range input.Technologies {
-	// 			var tech models.Technology
-	// 			database.DB.Where(models.Technology{Name: v}).FirstOrInit(&tech)
-	// 			technologies = append(technologies, tech)
-	// 		}
+	updatedClient, err := cc.clientRepository.UpdateClient(client, newClientModel)
+	if err != nil {
+		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
+		return
+	}
+	RespondWithJson(c.Writer, http.StatusOK, updatedClient)
 
-	// 		database.DB.Model(&profile).Association("Technologies").Replace(technologies)
-	// 	}
-
-	// 	newClientModel.Profile = profile
-
-	// }
-	// // RespondWithJson(c.Writer, http.StatusOK, newClientModel)
-	// // update Client
-	// updatedClient, err := cc.clientRepository.UpdateClient(Client, newClientModel)
-	// if err != nil {
-	// 	RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
-	// 	return
-	// }
-	// RespondWithJson(c.Writer, http.StatusOK, updatedClient)
 }
 
 /**

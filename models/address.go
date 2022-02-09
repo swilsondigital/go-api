@@ -11,5 +11,4 @@ type Address struct {
 	Postal_Code    string
 	Country        string
 	ClientID       uint
-	Client         Client
 }
