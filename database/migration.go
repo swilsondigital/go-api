@@ -7,6 +7,8 @@ func Automigrate() {
 		&models.Technology{},
 		&models.Image{},
 		&models.User{},
+		&models.Role{},
+		&models.PublicPassword{},
 		&models.Client{},
 		&models.Address{},
 		&models.PortfolioRecord{},
