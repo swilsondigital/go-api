@@ -62,8 +62,19 @@ func (p portfolioRecordRepository) CreateRecord(record models.PortfolioRecord) (
 * Update Record
  **/
 func (p portfolioRecordRepository) UpdateRecord(record models.PortfolioRecord, updatedValues models.PortfolioRecord) (models.PortfolioRecord, error) {
-	// update here
-	return record, nil
+	// update record model
+	err := p.DB.Model(&record).Updates(&updatedValues).Error
+
+	// upsert technologies
+	if updatedValues.Technologies != nil {
+		p.DB.Model(&record).Association("Technologies").Replace(&updatedValues.Technologies)
+	} else {
+		p.DB.Model(&record).Association("Technologies").Clear()
+	}
+
+	// save to make sure everything persists
+	p.DB.Save(&record)
+	return record, err
 }
 
 /**

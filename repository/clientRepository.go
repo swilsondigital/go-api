@@ -54,7 +54,7 @@ func (c clientRepository) CreateClient(client models.Client) (models.Client, err
 * Update client by id
  **/
 func (c clientRepository) UpdateClient(client models.Client, updatedValues models.Client) (models.Client, error) {
-	// update base user model
+	// update base client model
 	err := c.DB.Model(&client).Updates(updatedValues).Error
 
 	// upsert Address

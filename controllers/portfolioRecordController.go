@@ -6,7 +6,6 @@ import (
 	"goapi/models"
 	"goapi/repository"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,6 +15,20 @@ type portfolioRecordController struct {
 	recordRepository repository.PortfolioRecordRepository
 }
 type PortfolioRecordController interface {
+	GetRecordsByProject(c *gin.Context)
+	GetRecordById(c *gin.Context)
+	CreateRecord(c *gin.Context)
+	UpdateRecord(c *gin.Context)
+	DeleteRecord(c *gin.Context)
+}
+
+/**
+* expected format of json post/put requests
+ **/
+type PortfolioRecordInput struct {
+	UserID       int
+	Summary      string
+	Technologies []string
 }
 
 /**
@@ -52,33 +65,37 @@ func (rc portfolioRecordController) GetRecordById(c *gin.Context) {
 }
 
 /**
-* Create New Portfolio Record
+* Create Record
  **/
 func (rc portfolioRecordController) CreateRecord(c *gin.Context) {
 	// Get POST data
-	var input ProjectInput
+	var input PortfolioRecordInput
 	err := json.NewDecoder(c.Request.Body).Decode(&input)
 	// print error if any
 	if err != nil {
 		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
 		return
 	}
-	// get ClientID from url
-	clientID := c.Param("id")
 
-	// check for dates and parse
-	startDate, _ := time.Parse("2006-01-02", input.Start_Date)
-	deliveryDate, _ := time.Parse("2006-01-02", input.Delivery_Date)
-
-	// map data to new project type
-	project := models.Project{
-		Name:          input.Name,
-		Start_Date:    startDate,
-		Delivery_Date: deliveryDate,
-		Private:       input.Private,
+	// init New Record Model
+	record := models.PortfolioRecord{
+		Summary: input.Summary,
+		UserID:  uint(input.UserID),
 	}
 
-	// add project technologies
+	// get ProjectID from url
+	projectID := c.Param("id")
+	// get project
+	var project models.Project
+	err = database.DB.Where("id = ?", projectID).First(&project).Error
+	if err != nil {
+		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
+		return
+	} else {
+		record.ProjectID = project.ID
+	}
+
+	// Technologies
 	if input.Technologies != nil {
 		var technologies []models.Technology
 		for _, v := range input.Technologies {
@@ -88,41 +105,24 @@ func (rc portfolioRecordController) CreateRecord(c *gin.Context) {
 			database.DB.Where(models.Technology{Name: v}).FirstOrInit(&tech)
 			technologies = append(technologies, tech)
 		}
-
-		project.Technologies = &technologies
+		record.Technologies = &technologies
 	}
 
-	// get client model from db
-	var client models.Client
-	err = database.DB.Where("id = ?", clientID).First(&client).Error
+	// create record with repo
+	rec, err := rc.recordRepository.CreateRecord(record)
 	if err != nil {
 		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	// associate project to client
-	project.Client = &client
-
-	// update project to private if client is set as private
-	if client.Private && !project.Private {
-		project.Private = true
-	}
-
-	// create user with repo
-	p, err := rc.recordRepository.CreateProject(project)
-	if err != nil {
-		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
-		return
-	}
-	RespondWithJson(c.Writer, http.StatusOK, p)
+	RespondWithJson(c.Writer, http.StatusOK, rec)
 }
 
 /**
-* Update Project
+* Update Record
  **/
-func (rc portfolioRecordController) UpdateProject(c *gin.Context) {
+func (rc portfolioRecordController) UpdateRecord(c *gin.Context) {
 	// Get POST data
-	var input ProjectInput
+	var input PortfolioRecordInput
 	err := json.NewDecoder(c.Request.Body).Decode(&input)
 	// print error if any
 	if err != nil {
@@ -130,27 +130,22 @@ func (rc portfolioRecordController) UpdateProject(c *gin.Context) {
 		return
 	}
 
-	// get current project
+	// get existing record
 	id := c.Param("id")
-	project, err := rc.recordRepository.FindProjectById(id)
+	// get project
+	record, err := rc.recordRepository.FindRecordById(id)
 	if err != nil {
 		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// check for dates and parse
-	startDate, _ := time.Parse("2006-01-02", input.Start_Date)
-	deliveryDate, _ := time.Parse("2006-01-02", input.Delivery_Date)
-
-	// map data to new project type
-	newProjectModel := models.Project{
-		Name:          input.Name,
-		Start_Date:    startDate,
-		Delivery_Date: deliveryDate,
-		Private:       input.Private,
+	// init New Record Model
+	newRecordModel := models.PortfolioRecord{
+		Summary: input.Summary,
+		UserID:  uint(input.UserID),
 	}
 
-	// add project technologies
+	// Technologies
 	if input.Technologies != nil {
 		var technologies []models.Technology
 		for _, v := range input.Technologies {
@@ -160,33 +155,27 @@ func (rc portfolioRecordController) UpdateProject(c *gin.Context) {
 			database.DB.Where(models.Technology{Name: v}).FirstOrInit(&tech)
 			technologies = append(technologies, tech)
 		}
-
-		newProjectModel.Technologies = &technologies
+		newRecordModel.Technologies = &technologies
 	}
 
-	// update project to private if client is set as private
-	if project.Client.Private && !newProjectModel.Private {
-		newProjectModel.Private = true
-	}
-
-	// create user with repo
-	p, err := rc.recordRepository.UpdateProject(project, newProjectModel)
+	// Update Record
+	rec, err := rc.recordRepository.UpdateRecord(record, newRecordModel)
 	if err != nil {
 		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
 		return
 	}
-	RespondWithJson(c.Writer, http.StatusOK, p)
+	RespondWithJson(c.Writer, http.StatusOK, rec)
 }
 
 /**
-* Delete Project
+* Delete Record
  **/
-func (rc portfolioRecordController) DeleteProject(c *gin.Context) {
+func (rc portfolioRecordController) DeleteRecord(c *gin.Context) {
 	id := c.Param("id")
-	err := rc.recordRepository.DeleteProjectById(id)
+	err := rc.recordRepository.DeleteRecordById(id)
 	if err != nil {
 		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
 		return
 	}
-	RespondWithJson(c.Writer, http.StatusOK, "Project Deleted Successfully")
+	RespondWithJson(c.Writer, http.StatusOK, "Portfolio Record Deleted Successfully")
 }

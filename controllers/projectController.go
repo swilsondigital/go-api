@@ -28,11 +28,11 @@ type ProjectController interface {
 * expected format of json post/put requests
  **/
 type ProjectInput struct {
-	Name          string   `json:"name"`
-	Technologies  []string `json:"technologies"`
-	Start_Date    string   `json:"start_date"`    // accepts yyyy-mm-dd
-	Delivery_Date string   `json:"delivery_date"` // accepts yyyy-mm-dd
-	Private       bool     `json:"private"`
+	Name          string
+	Technologies  []string
+	Start_Date    string // accepts yyyy-mm-dd
+	Delivery_Date string // accepts yyyy-mm-dd
+	Private       bool
 }
 
 /**
