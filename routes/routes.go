@@ -16,7 +16,7 @@ func Setup(r *gin.Engine) {
 	// General Page Endpoints
 	r.GET("/", pages.ShowHomePage)
 
-	// User Endpoints
+	// User Endpoints - https://domain/users/:id
 	userRepository := repository.NewUserRepository(database.DB)
 	userController := controllers.NewUserController(userRepository)
 	userRouter := r.Group("/users")
@@ -28,7 +28,7 @@ func Setup(r *gin.Engine) {
 		userRouter.DELETE("/:id", userController.DeleteUser) // Delete
 	}
 
-	// Project Repository & Controller
+	// Project Repository & Controller - https://domain/projects/:id
 	projectRepository := repository.NewProjectRepository(database.DB)
 	projectController := controllers.NewProjectController(projectRepository)
 	projectRouter := r.Group("/projects")
@@ -37,9 +37,15 @@ func Setup(r *gin.Engine) {
 		projectRouter.GET("/:id", projectController.GetProjectById)   // Read
 		projectRouter.PUT("/:id", projectController.UpdateProject)    // Update
 		projectRouter.DELETE("/:id", projectController.DeleteProject) // Delete
+
+		// Project PortfolioRecords Endpoints - https://domain/projects/:id/records
+		projectPortfolioRouter := projectRouter.Group("/:id/records")
+		{
+			projectPortfolioRouter.POST("/")
+		}
 	}
 
-	// Client Endpoints
+	// Client Endpoints - https://domain/clients/:id
 	clientRepository := repository.NewClientRepository(database.DB)
 	clientController := controllers.NewClientController(clientRepository)
 	clientRouter := r.Group("/clients")
@@ -50,7 +56,7 @@ func Setup(r *gin.Engine) {
 		clientRouter.PUT("/:id", clientController.UpdateClient)    // Update
 		clientRouter.DELETE("/:id", clientController.DeleteClient) // Delete
 
-		// Client Project Endpoints
+		// Client Project Endpoints - https://domain/clients/:id/projects
 		clientProjectRouter := clientRouter.Group("/:id/projects")
 		{
 			clientProjectRouter.GET("/", projectController.GetAllClientProjects) // Index

@@ -26,6 +26,8 @@ func NewTechnologyRepository(db *gorm.DB) TechnologyRepository {
 	return technologyRepository{DB: db}
 }
 
+// TODO: Add check for lowercase/uppercase/caps
+
 /**
 * Get all technologies
  **/

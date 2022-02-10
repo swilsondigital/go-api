@@ -35,6 +35,7 @@ type UserInput struct {
 	Technologies    []string
 	YearsExperience int
 	MemberSince     string // accepts yyyy-mm-dd
+	ProfilePhoto    string
 }
 
 /**
@@ -91,25 +92,41 @@ func (uc userController) CreateUser(c *gin.Context) {
 		Phone:         input.Phone,
 	}
 
-	if input.Technologies != nil || input.YearsExperience != 0 || input.MemberSince != "" {
-		// convert Technologies and parse member since
+	if input.Technologies != nil || input.YearsExperience != 0 || input.MemberSince != "" || input.ProfilePhoto != "" {
+
+		// init profile model
+		profile := models.Profile{
+			YearsExperience: input.YearsExperience,
+		}
+
+		// parse member since
 		since, err := time.Parse("2006-01-02", input.MemberSince)
 		if err != nil {
 			RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
 			return
-		}
-		var technologies []models.Technology
-		for _, v := range input.Technologies {
-			var tech models.Technology
-			database.DB.Where(models.Technology{Name: v}).FirstOrInit(&tech)
-			technologies = append(technologies, tech)
+		} else {
+			profile.MemberSince = since
 		}
 
-		// map input for profile
-		profile := models.Profile{
-			Technologies:    &technologies,
-			YearsExperience: input.YearsExperience,
-			MemberSince:     since,
+		// check for technologies
+		if input.Technologies != nil {
+			var technologies []models.Technology
+			for _, v := range input.Technologies {
+
+				// TODO: Add check for lowercase/uppercase/caps
+				var tech models.Technology
+				database.DB.Where(models.Technology{Name: v}).FirstOrInit(&tech)
+				technologies = append(technologies, tech)
+			}
+			profile.Technologies = &technologies
+		}
+
+		// check for profile photo
+		if input.ProfilePhoto != "" {
+			photo := models.Image{
+				Blob: input.ProfilePhoto,
+			}
+			profile.ProfilePhoto = &photo
 		}
 
 		// TODO: check if profile should be created (a client contact)
@@ -158,25 +175,31 @@ func (uc userController) UpdateUser(c *gin.Context) {
 	}
 
 	// load profile if available
-	if input.Technologies != nil || input.YearsExperience != 0 || input.MemberSince != "" {
+	if input.Technologies != nil || input.YearsExperience != 0 || input.MemberSince != "" || input.ProfilePhoto != "" {
 		var profile models.Profile
 		database.DB.Preload("Technologies").Model(&user).Association("Profile").Find(&profile)
 
-		// parse since time
-		since, err := time.Parse("2006-01-02", input.MemberSince)
-		if err != nil {
-			RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
-			return
+		// add years experience
+		if input.YearsExperience != 0 {
+			profile.YearsExperience = input.YearsExperience
 		}
 
-		// assign memberSince and Years Experience
-		profile.MemberSince = since
-		profile.YearsExperience = input.YearsExperience
+		// check member since
+		if input.MemberSince != "" {
+			// parse since time
+			since, err := time.Parse("2006-01-02", input.MemberSince)
+			if err != nil {
+				RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
+				return
+			}
+			profile.MemberSince = since
+		}
 
 		// update associations to technologies
 		if input.Technologies != nil {
 			var technologies []models.Technology
 			for _, v := range input.Technologies {
+				// TODO: Add check for lowercase/uppercase/caps
 				var tech models.Technology
 				database.DB.Where(models.Technology{Name: v}).FirstOrInit(&tech)
 				technologies = append(technologies, tech)
@@ -185,10 +208,17 @@ func (uc userController) UpdateUser(c *gin.Context) {
 			database.DB.Model(&profile).Association("Technologies").Replace(&technologies)
 		}
 
+		// check for profile photo
+		if input.ProfilePhoto != "" {
+			photo := models.Image{
+				Blob: input.ProfilePhoto,
+			}
+			database.DB.Model(&profile).Association("ProfilePhoto").Replace(&photo)
+		}
+
 		newUserModel.Profile = &profile
 
 	}
-	// RespondWithJson(c.Writer, http.StatusOK, newUserModel)
 	// update user
 	updatedUser, err := uc.userRepository.UpdateUser(user, newUserModel)
 	if err != nil {

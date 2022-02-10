@@ -11,79 +11,50 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type projectController struct {
+type portfolioRecordController struct {
 	// place for auth later
-	projectRepository repository.ProjectRepository
+	recordRepository repository.PortfolioRecordRepository
 }
-type ProjectController interface {
-	GetAllProjects(c *gin.Context)
-	GetAllClientProjects(c *gin.Context)
-	GetProjectById(c *gin.Context)
-	CreateProject(c *gin.Context)
-	UpdateProject(c *gin.Context)
-	DeleteProject(c *gin.Context)
-}
-
-/**
-* expected format of json post/put requests
- **/
-type ProjectInput struct {
-	Name          string   `json:"name"`
-	Technologies  []string `json:"technologies"`
-	Start_Date    string   `json:"start_date"`    // accepts yyyy-mm-dd
-	Delivery_Date string   `json:"delivery_date"` // accepts yyyy-mm-dd
-	Private       bool     `json:"private"`
+type PortfolioRecordController interface {
 }
 
 /**
 * Setup New Project Controller
  **/
-func NewProjectController(pr repository.ProjectRepository) ProjectController {
-	return projectController{projectRepository: pr}
+func NewPortfolioRecordController(rr repository.PortfolioRecordRepository) PortfolioRecordController {
+	return portfolioRecordController{recordRepository: rr}
 }
 
 /**
-* Get All Projects
+* Get All Project Records
  **/
-func (pc projectController) GetAllProjects(c *gin.Context) {
-	projects, err := pc.projectRepository.FindAllProjects()
-	if err != nil {
-		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
-		return
-	}
-	RespondWithJson(c.Writer, http.StatusOK, projects)
-}
-
-/**
-* Get All Client Projects
- **/
-func (pc projectController) GetAllClientProjects(c *gin.Context) {
+func (rc portfolioRecordController) GetRecordsByProject(c *gin.Context) {
 	id := c.Param("id")
-	projects, err := pc.projectRepository.FindAllProjectsByClientId(id)
+	records, err := rc.recordRepository.FindRecordsByProjectId(id)
 	if err != nil {
 		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
 		return
 	}
-	RespondWithJson(c.Writer, http.StatusOK, projects)
+	RespondWithJson(c.Writer, http.StatusOK, records)
 }
 
 /**
-* Get Project by ID
+* Get Single Record By
  **/
-func (pc projectController) GetProjectById(c *gin.Context) {
+func (rc portfolioRecordController) GetRecordById(c *gin.Context) {
 	id := c.Param("id")
-	project, err := pc.projectRepository.FindProjectById(id)
+	record, err := rc.recordRepository.FindRecordById(id)
 	if err != nil {
 		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
 		return
 	}
-	RespondWithJson(c.Writer, http.StatusOK, project)
+	RespondWithJson(c.Writer, http.StatusOK, record)
 }
 
 /**
-* Create New Project
+* Create New Portfolio Record
  **/
-func (pc projectController) CreateProject(c *gin.Context) {
+func (rc portfolioRecordController) CreateRecord(c *gin.Context) {
 	// Get POST data
 	var input ProjectInput
 	err := json.NewDecoder(c.Request.Body).Decode(&input)
@@ -138,7 +109,7 @@ func (pc projectController) CreateProject(c *gin.Context) {
 	}
 
 	// create user with repo
-	p, err := pc.projectRepository.CreateProject(project)
+	p, err := rc.recordRepository.CreateProject(project)
 	if err != nil {
 		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
 		return
@@ -149,7 +120,7 @@ func (pc projectController) CreateProject(c *gin.Context) {
 /**
 * Update Project
  **/
-func (pc projectController) UpdateProject(c *gin.Context) {
+func (rc portfolioRecordController) UpdateProject(c *gin.Context) {
 	// Get POST data
 	var input ProjectInput
 	err := json.NewDecoder(c.Request.Body).Decode(&input)
@@ -161,7 +132,7 @@ func (pc projectController) UpdateProject(c *gin.Context) {
 
 	// get current project
 	id := c.Param("id")
-	project, err := pc.projectRepository.FindProjectById(id)
+	project, err := rc.recordRepository.FindProjectById(id)
 	if err != nil {
 		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
 		return
@@ -199,7 +170,7 @@ func (pc projectController) UpdateProject(c *gin.Context) {
 	}
 
 	// create user with repo
-	p, err := pc.projectRepository.UpdateProject(project, newProjectModel)
+	p, err := rc.recordRepository.UpdateProject(project, newProjectModel)
 	if err != nil {
 		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
 		return
@@ -210,9 +181,9 @@ func (pc projectController) UpdateProject(c *gin.Context) {
 /**
 * Delete Project
  **/
-func (pc projectController) DeleteProject(c *gin.Context) {
+func (rc portfolioRecordController) DeleteProject(c *gin.Context) {
 	id := c.Param("id")
-	err := pc.projectRepository.DeleteProjectById(id)
+	err := rc.recordRepository.DeleteProjectById(id)
 	if err != nil {
 		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
 		return
