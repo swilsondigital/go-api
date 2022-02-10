@@ -39,7 +39,7 @@ func (u userRepository) FindAllUsers() (users models.Users, err error) {
 * Get single user by id
  **/
 func (u userRepository) FindUserById(id string) (user models.User, err error) {
-	err = u.DB.Preload(clause.Associations).Where("id = ?", id).First(&user).Error
+	err = u.DB.Preload(clause.Associations).Preload("PortfolioRecords.Technologies").Where("id = ?", id).First(&user).Error
 	return user, err
 }
 
@@ -47,7 +47,7 @@ func (u userRepository) FindUserById(id string) (user models.User, err error) {
 * Get single user by id
  **/
 func (u userRepository) FindUserByEmail(email string) (user models.User, err error) {
-	err = u.DB.Preload(clause.Associations).Where("email = ?", email).First(&user).Error
+	err = u.DB.Preload(clause.Associations).Preload("PortfolioRecords.Technologies").Where("email = ?", email).First(&user).Error
 	return user, err
 }
 
