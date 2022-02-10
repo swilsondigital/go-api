@@ -12,12 +12,16 @@ type technologyController struct {
 	technologyRepository repository.TechnologyRepository
 }
 type TechnologyController interface {
+	GetAllTechnologies(c *gin.Context)
+	GetTechnologyById(c *gin.Context)
+	GetTechnologyByName(c *gin.Context)
 }
 
 /**
 * expected format of json post/put requests
  **/
 type TechnologyInput struct {
+	Name string
 }
 
 /**
