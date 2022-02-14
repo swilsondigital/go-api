@@ -32,7 +32,7 @@ func main() {
 	// set to listen
 	port, ok := os.LookupEnv("PORT")
 	if !ok {
-		port = "3000"
+		port = "3030"
 	}
 
 	// initalize routes

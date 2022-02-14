@@ -75,4 +75,12 @@ func Setup(r *gin.Engine) {
 		}
 	}
 
+	// Technology Endpoints - https://domain/technology/
+	technologyRepository := repository.NewTechnologyRepository(database.DB)
+	technologyController := controllers.NewTechnologyController(technologyRepository)
+	technologyRouter := r.Group("/technology")
+	{
+		technologyRouter.GET("/", technologyController.GetAllTechnologies) //Index
+	}
+
 }
