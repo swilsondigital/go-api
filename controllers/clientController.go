@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"goapi/database"
 	"goapi/models"
 	"goapi/repository"
@@ -86,8 +87,10 @@ func (cc clientController) CreateClient(c *gin.Context) {
 		Private: input.Private,
 	}
 
+	fmt.Println(len(input.Address))
+
 	// check for client address
-	if input.Address != nil {
+	if len(input.Address) != 0 {
 		address := models.Address{
 			Address_1:      input.Address["Address_1"],
 			Address_2:      input.Address["Address_2"],
@@ -100,7 +103,7 @@ func (cc clientController) CreateClient(c *gin.Context) {
 	}
 
 	// check for client contacts
-	if input.Contact != nil {
+	if len(input.Contact) != 0 {
 		user := models.User{
 			FirstName:     input.Contact["FirstName"],
 			LastName:      input.Contact["LastName"],
@@ -157,7 +160,7 @@ func (cc clientController) UpdateClient(c *gin.Context) {
 	}
 
 	// check for client address
-	if input.Address != nil {
+	if len(input.Address) != 0 {
 		address := models.Address{
 			Address_1:      input.Address["Address_1"],
 			Address_2:      input.Address["Address_2"],
@@ -170,7 +173,7 @@ func (cc clientController) UpdateClient(c *gin.Context) {
 	}
 
 	// check for client contacts
-	if input.Contact != nil {
+	if len(input.Contact) != 0 {
 		user := models.User{
 			FirstName:     input.Contact["FirstName"],
 			LastName:      input.Contact["LastName"],
