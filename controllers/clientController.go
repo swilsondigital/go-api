@@ -60,7 +60,7 @@ func (cc clientController) GetClientById(c *gin.Context) {
 	id := c.Param("id")
 	client, err := cc.clientRepository.FindClientById(id)
 	if err != nil {
-		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
+		RespondWithError(c.Writer, http.StatusNotFound, err.Error())
 		return
 	}
 	RespondWithJson(c.Writer, http.StatusOK, client)
