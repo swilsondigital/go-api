@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"goapi/database"
 	"goapi/models"
 	"goapi/repository"
@@ -86,8 +85,6 @@ func (cc clientController) CreateClient(c *gin.Context) {
 		Phone:   input.Phone,
 		Private: input.Private,
 	}
-
-	fmt.Println(len(input.Address))
 
 	// check for client address
 	if len(input.Address) != 0 {
