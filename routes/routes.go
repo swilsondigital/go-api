@@ -13,6 +13,11 @@ import (
 * Setup routing
  **/
 func Setup(r *gin.Engine) {
+	// Page Not Found
+	r.NoRoute(func(c *gin.Context) {
+		c.JSON(404, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
+	})
+
 	// General Page Endpoints
 	r.GET("/", pages.ShowHomePage)
 
