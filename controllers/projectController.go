@@ -74,7 +74,7 @@ func (pc projectController) GetProjectById(c *gin.Context) {
 	id := c.Param("id")
 	project, err := pc.projectRepository.FindProjectById(id)
 	if err != nil {
-		RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
+		RespondWithError(c.Writer, http.StatusNotFound, err.Error())
 		return
 	}
 	RespondWithJson(c.Writer, http.StatusOK, project)
