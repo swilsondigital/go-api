@@ -102,8 +102,8 @@ func (pc projectController) CreateProject(c *gin.Context) {
 	// map data to new project type
 	project := models.Project{
 		Name:          input.Name,
-		Start_Date:    startDate,
-		Delivery_Date: deliveryDate,
+		Start_Date:    &startDate,
+		Delivery_Date: &deliveryDate,
 		Private:       input.Private,
 	}
 
@@ -174,8 +174,8 @@ func (pc projectController) UpdateProject(c *gin.Context) {
 	// map data to new project type
 	newProjectModel := models.Project{
 		Name:          input.Name,
-		Start_Date:    startDate,
-		Delivery_Date: deliveryDate,
+		Start_Date:    &startDate,
+		Delivery_Date: &deliveryDate,
 		Private:       input.Private,
 	}
 

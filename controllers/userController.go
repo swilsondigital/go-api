@@ -105,7 +105,7 @@ func (uc userController) CreateUser(c *gin.Context) {
 			RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
 			return
 		} else {
-			profile.MemberSince = since
+			profile.MemberSince = &since
 		}
 
 		// check for technologies
@@ -192,7 +192,7 @@ func (uc userController) UpdateUser(c *gin.Context) {
 				RespondWithError(c.Writer, http.StatusInternalServerError, err.Error())
 				return
 			}
-			profile.MemberSince = since
+			profile.MemberSince = &since
 		}
 
 		// update associations to technologies

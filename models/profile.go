@@ -11,6 +11,6 @@ type Profile struct {
 	UserID          uint
 	Technologies    *[]Technology `gorm:"many2many:profile_technologies"`
 	YearsExperience int           `validate:"numeric"`
-	MemberSince     time.Time     `validate:"timestamp,lte"`
+	MemberSince     *time.Time    `validate:"timestamp,lte"`
 	ProfilePhoto    *Image        `gorm:"polymorphic:Owner;"`
 }
