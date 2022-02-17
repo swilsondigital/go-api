@@ -30,7 +30,7 @@ func NewClientRepository(db *gorm.DB) ClientRepository {
 * Get all clients
  **/
 func (c clientRepository) FindAllClients() (clients models.Clients, err error) {
-	err = c.DB.Preload(clause.Associations).Preload("Projects.Technologies").Find(&clients).Error
+	err = c.DB.Preload(clause.Associations).Preload("Projects.Technologies").Preload("Projects.PortfolioRecords.User").Find(&clients).Error
 	return clients, err
 }
 
@@ -38,7 +38,7 @@ func (c clientRepository) FindAllClients() (clients models.Clients, err error) {
 * Get single client by id
  **/
 func (c clientRepository) FindClientById(id string) (client models.Client, err error) {
-	err = c.DB.Preload(clause.Associations).Preload("Projects.Technologies").Where("id = ?", id).First(&client).Error
+	err = c.DB.Preload(clause.Associations).Preload("Projects.Technologies").Preload("Projects.PortfolioRecords.User").Where("id = ?", id).First(&client).Error
 	return client, err
 }
 

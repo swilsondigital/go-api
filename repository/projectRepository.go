@@ -38,7 +38,7 @@ func (p projectRepository) FindAllProjects() (projects models.Projects, err erro
 * Get All Projects By Client ID
  **/
 func (p projectRepository) FindAllProjectsByClientId(id string) (projects models.Projects, err error) {
-	err = p.DB.Preload("Client.Logo").Preload("Technologies").Where("client_id = ?", id).Find(&projects).Error
+	err = p.DB.Preload("Client.Logo").Preload("Technologies").Preload("PortfolioRecords.User").Preload("PortfolioRecords.Technologies").Where("client_id = ?", id).Find(&projects).Error
 	return projects, err
 }
 
@@ -46,7 +46,7 @@ func (p projectRepository) FindAllProjectsByClientId(id string) (projects models
 * Get single Project by id
  **/
 func (p projectRepository) FindProjectById(id string) (project models.Project, err error) {
-	err = p.DB.Preload("Client.Logo").Preload("Technologies").Where("id = ?", id).First(&project).Error
+	err = p.DB.Preload("Client.Logo").Preload("Technologies").Preload("PortfolioRecords.User").Preload("PortfolioRecords.Technologies").Where("id = ?", id).First(&project).Error
 	return project, err
 }
 

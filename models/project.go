@@ -15,7 +15,7 @@ type Project struct {
 	Start_Date       *time.Time    `gorm:"default:null"`
 	Delivery_Date    *time.Time    `gorm:"default:null"`
 	Private          bool
-	PortfolioRecords *[]PortfolioRecord
+	PortfolioRecords *[]PortfolioRecord `json:",omitempty"`
 }
 
 type Projects []*Project
