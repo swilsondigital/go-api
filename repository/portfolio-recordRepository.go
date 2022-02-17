@@ -4,6 +4,7 @@ import (
 	"goapi/models"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type portfolioRecordRepository struct {
@@ -30,7 +31,7 @@ func NewPortfolioRecordRepository(db *gorm.DB) PortfolioRecordRepository {
 * Get All Records for a project
  **/
 func (p portfolioRecordRepository) FindRecordsByProjectId(id string) (records models.PortfolioRecords, err error) {
-	err = p.DB.Where("project_id = ?", id).Find(&records).Error
+	err = p.DB.Where("project_id = ?", id).Preload("Project.Client").Preload(clause.Associations).Find(&records).Error
 	return records, err
 }
 
@@ -38,7 +39,7 @@ func (p portfolioRecordRepository) FindRecordsByProjectId(id string) (records mo
 * Get All Records for a user
  **/
 func (p portfolioRecordRepository) FindRecordsByUserId(id string) (records models.PortfolioRecords, err error) {
-	err = p.DB.Where("user_id = ?", id).Find(&records).Error
+	err = p.DB.Where("user_id = ?", id).Preload("Project.Client").Preload(clause.Associations).Find(&records).Error
 	return records, err
 }
 
@@ -46,7 +47,7 @@ func (p portfolioRecordRepository) FindRecordsByUserId(id string) (records model
 * Get Single Record
  **/
 func (p portfolioRecordRepository) FindRecordById(id string) (record models.PortfolioRecord, err error) {
-	err = p.DB.Where("id = ?", id).First(&record).Error
+	err = p.DB.Where("id = ?", id).Preload("Project.Client").Preload(clause.Associations).First(&record).Error
 	return record, err
 }
 
